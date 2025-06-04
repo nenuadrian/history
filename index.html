@@ -21,6 +21,23 @@
 
     <button id="generate-btn">Generate Manuscript</button>
 
+    <hr>
+
+    <div class="upload-section">
+        <h2>Learn from Image</h2>
+        <p>Upload an image (PNG, JPG, GIF) to influence future generations (conceptual).</p>
+        <input type="file" id="manuscript-upload" accept="image/png, image/jpeg, image/gif">
+        <button id="upload-btn">Upload for Learning</button>
+    </div>
+
+    <hr>
+
+    <h2>Server-Generated Manuscript</h2>
+    <div id="server-image-container">
+      <img id="generated-manuscript-image" src="#" alt="Generated Manuscript">
+      <p id="server-image-placeholder-text">Generated image will appear here</p>
+    </div>
+
     <script src="https://unpkg.com/konva@9/konva.min.js"></script>
     <script src="app.js"></script>
 </body>

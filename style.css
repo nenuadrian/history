@@ -14,18 +14,90 @@ body {
     flex-direction: column;
     align-items: center;
     margin: 20px;
+    padding: 0; /* Add some padding reset */
+}
+
+h1, h2 {
+    color: #333;
 }
 
 #manuscript-container {
-    width: 600px; /* Keep as specified */
-    height: 800px; /* Keep as specified */
+    width: 600px;
+    height: 800px;
     border: 1px solid #ccc;
     margin-bottom: 20px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-button {
+button, input[type="button"] { /* Style all buttons consistently */
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin: 5px; /* Add some margin for spacing */
+}
+
+button:hover, input[type="button"]:hover {
+    background-color: #0056b3;
+}
+
+/* File Upload Section Styling */
+.upload-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    text-align: center; /* Center contents of this section */
+    width: 600px; /* Match container width */
+    box-sizing: border-box;
+}
+
+.upload-section h2 {
+    margin-top: 0;
+}
+
+#manuscript-upload {
+    display: block; /* Make it take its own line */
+    margin: 15px auto; /* Add vertical and auto horizontal margin */
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Server Image Container Styling */
+#server-image-container {
+    width: 600px;
+    height: 800px;
+    border: 1px dashed #999; /* Made border slightly darker */
+    margin-top: 20px;
+    background-color: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px; /* Added for spacing below */
+}
+
+#server-image-placeholder-text {
+    color: #777;
+    font-style: italic;
+    font-size: 18px; /* Slightly larger for placeholder */
+}
+
+#generated-manuscript-image {
+    max-width: 100%;
+    max-height: 100%;
+    /* display: none; is handled by JS, but can be default here too */
+}
+
+hr {
+    width: 600px; /* Make HRs consistent with container width */
+    border: 0;
+    height: 1px;
+    background: #ddd;
+    margin: 30px 0; /* Increased margin for HRs */
 }

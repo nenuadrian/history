@@ -1,106 +1,147 @@
-// Wait for the DOM to be fully loaded before initializing Konva
+// Wait for the DOM to be fully loaded
 window.onload = function() {
     const STAGE_WIDTH = 600;
     const STAGE_HEIGHT = 800;
 
-    // Konva Stage Initialization
+    // DOM Element References
+    const uploadInput = document.getElementById('manuscript-upload');
+    const uploadBtn = document.getElementById('upload-btn');
+    const generatedImage = document.getElementById('generated-manuscript-image');
+    const serverImageContainer = document.getElementById('server-image-container');
+    const serverImagePlaceholderText = document.getElementById('server-image-placeholder-text');
+    const generateBtn = document.getElementById('generate-btn');
+    const konvaContainer = document.getElementById('manuscript-container');
+
+    // Global variable to store the ID from uploads
+    let currentStyleId = null;
+
+    // Konva Stage Initialization (can be left for potential future use, but not drawn on by default)
     const stage = new Konva.Stage({
-        container: 'manuscript-container', // ID of the div
+        container: 'manuscript-container',
         width: STAGE_WIDTH,
         height: STAGE_HEIGHT,
     });
-
-    // Create a layer
     const layer = new Konva.Layer();
     stage.add(layer);
+    // konvaContainer.style.display = 'none'; // Optionally hide Konva canvas initially
 
-    // 1. Text Snippet Pool
-    const manuscriptTexts = [
-        "Ars longa, vita brevis.",
-        "Tempus fugit.",
-        "In vino veritas.",
-        "Fortuna favet fortibus.",
-        "Sapere aude.",
-        "Carpe diem, quam minimum credula postero.",
-        "Veni, vidi, vici.",
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed nonne merninisti licere mihi ista probare, quae sunt a te dicta?",
-        "Philosophia est ars vitae.",
-        "Acta, non verba.",
-        "Amor vincit omnia."
-    ];
+    // --- FILE UPLOAD LOGIC ---
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function() {
+            if (!uploadInput.files || uploadInput.files.length === 0) {
+                alert('Please select a file to upload.');
+                return;
+            }
+            const file = uploadInput.files[0];
+            const formData = new FormData();
+            formData.append('manuscript_image', file);
 
-    function getRandomElement(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-    }
+            console.log('Initiating file upload...');
+            serverImagePlaceholderText.textContent = 'Uploading style image...';
+            generatedImage.style.display = 'none';
+            serverImagePlaceholderText.style.display = 'block';
 
-    function getRandomInt(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
 
-    function generateManuscript() {
-        console.log('Generating manuscript...');
-        layer.destroyChildren(); // Clear previous content
+            fetch('/api/upload_manuscript', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    // Try to parse error message from server if available
+                    return response.json().then(errData => {
+                        throw new Error(errData.message || `Server error: ${response.status} ${response.statusText}`);
+                    }).catch(() => {
+                        // Fallback if error data is not JSON or no message field
+                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                    });
+                }
+            })
+            .then(data => {
+                console.log('Upload successful:', data);
+                alert(data.message || 'File uploaded successfully!');
+                currentStyleId = data.upload_id; // Store the upload_id
+                serverImagePlaceholderText.textContent = `Style ID ${currentStyleId} learned. Click "Generate Manuscript".`;
 
-        // Background
-        const background = new Konva.Rect({
-            x: 0,
-            y: 0,
-            width: STAGE_WIDTH,
-            height: STAGE_HEIGHT,
-            fill: '#F5DEB3', // A parchment-like color (Wheat)
+            })
+            .catch(error => {
+                console.error('Upload failed:', error);
+                alert(`Upload failed: ${error.message}`);
+                serverImagePlaceholderText.textContent = 'Upload failed. Please try again.';
+            });
         });
-        layer.add(background);
-
-        background.cache();
-        background.filters([Konva.Filters.Noise]);
-        background.noise(0.3);
-
-        // Random Text Selection
-        let selectedSnippets = [];
-        const numberOfSnippets = getRandomInt(2, 4); // Pick 2 to 4 snippets
-        for (let i = 0; i < numberOfSnippets; i++) {
-            selectedSnippets.push(getRandomElement(manuscriptTexts));
-        }
-        // Ensure not too long, roughly limit characters
-        let combinedText = selectedSnippets.join("\n\n");
-        if (combinedText.length > 450) { // Approximate character limit
-            combinedText = combinedText.substring(0, 450) + "...";
-        }
-
-
-        // Randomized Text Styling
-        const randomFontSize = getRandomInt(20, 24); // e.g., between 20 and 24
-        const randomLetterSpacingOptions = [0.5, 1, 1.5];
-        const randomLetterSpacing = getRandomElement(randomLetterSpacingOptions);
-
-        const textObject = new Konva.Text({
-            x: 40,
-            y: 60,
-            text: combinedText,
-            fontFamily: 'MedievalSharp',
-            fontSize: randomFontSize,
-            fill: '#3A2A1B', // Dark brown
-            width: STAGE_WIDTH - 80,
-            lineHeight: 1.6, // Adjusted for potentially varied font sizes
-            letterSpacing: randomLetterSpacing,
-        });
-        layer.add(textObject);
-
-        stage.batchDraw();
-        console.log('Manuscript generated with random text and styles.');
+    } else {
+        console.error('Upload button not found!');
     }
 
-    const generateBtn = document.getElementById('generate-btn');
+    // --- SERVER-SIDE GENERATION REQUEST LOGIC ---
     if (generateBtn) {
-        generateBtn.addEventListener('click', generateManuscript);
+        generateBtn.addEventListener('click', function() {
+            let url = '/api/generate_manuscript';
+            if (currentStyleId) {
+                url += `?style_id=${currentStyleId}`;
+            }
+
+            console.log(`Requesting manuscript from: ${url}`);
+            serverImagePlaceholderText.textContent = 'Generating manuscript from server...';
+            generatedImage.style.display = 'none';
+            serverImagePlaceholderText.style.display = 'block';
+            if(konvaContainer) konvaContainer.style.display = 'none'; // Hide Konva canvas
+
+
+            fetch(url)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                     return response.json().then(errData => {
+                        throw new Error(errData.message || `Server error: ${response.status} ${response.statusText}`);
+                    }).catch(() => {
+                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                    });
+                }
+            })
+            .then(data => {
+                if (data.status === "success" && data.generated_images && data.generated_images.length > 0) {
+                    console.log('Generation successful:', data);
+                    generatedImage.src = data.generated_images[0].image_url;
+                    generatedImage.style.display = 'block';
+                    serverImagePlaceholderText.style.display = 'none';
+                    if(konvaContainer) konvaContainer.style.display = 'none'; // Ensure Konva is hidden
+                } else if (data.status === "processing") {
+                    console.log('Image generation is processing:', data);
+                    alert(data.message || "Your image is being processed. Please try generating again shortly.");
+                    serverImagePlaceholderText.textContent = data.message || "Image processing. Try again soon.";
+                    // Could implement polling here if desired using data.job_id
+                }
+                else {
+                    throw new Error(data.message || 'Received success status, but no image URL found or invalid data structure.');
+                }
+            })
+            .catch(error => {
+                console.error('Generation failed:', error);
+                alert(`Generation failed: ${error.message}`);
+                serverImagePlaceholderText.textContent = 'Generation failed. Please try again.';
+                generatedImage.style.display = 'none';
+                serverImagePlaceholderText.style.display = 'block';
+            });
+        });
     } else {
         console.error('Generate button not found!');
     }
 
+    // Remove or comment out old Konva-based generateManuscript and its initial call
+    /*
+    const manuscriptTexts = [ ... ]; // Old text pool
+    function generateManuscript() { ... } // Old Konva generation function
     setTimeout(() => {
-        generateManuscript();
-        console.log('Konva stage and initial manuscript initialized.');
+        // generateManuscript(); // DO NOT CALL OLD FUNCTION
+        console.log('Konva stage initialized. Client-side generation is disabled by default.');
     }, 100);
+    */
+    console.log('Client-side manuscript generation app initialized. Ready for server interaction.');
+    serverImagePlaceholderText.textContent = 'Upload an image to define a style, or click "Generate Manuscript" for a default style.';
+
 };
